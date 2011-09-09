@@ -4,7 +4,7 @@ def _iterate_over_pages(getter, page_size, start_from, upper_bound):
     page = int(math.floor(start_from / page_size))
 
     if upper_bound is not None:
-        num_items = upper_bound - start_from
+        num_items = upper_bound - start_from + 1
 
     start_from -= page * page_size
 
@@ -21,6 +21,18 @@ def _iterate_over_pages(getter, page_size, start_from, upper_bound):
                         return
         page += 1
         results = getter(page)
+
+
+def _return_over_pages(getter, page_size, start_from, upper_bound):
+    page = int(math.floor(start_from / page_size))
+
+    if upper_bound is not None:
+        num_items = upper_bound - start_from + 1
+
+    start_from -= page * page_size
+
+    results = getter(page)
+    return results[start_from]
 
 
 class IterableQuery(object):
@@ -43,7 +55,7 @@ class IterableQuery(object):
             start = self._start_from
             if key.start is not None:
                 if key.start < 0:
-                    raise KeyError('Negative indexes aren\'t not supported')
+                    raise KeyError('Negative indexes are not supported')
                 start += key.start
 
             if key.stop is None:
@@ -60,5 +72,10 @@ class IterableQuery(object):
                 start_from = start,
                 upper_bound = upper_bound,
             )
-        raise KeyError('Key %r unsupported.' % (key,))
-
+        else:
+            return _return_over_pages(
+                self._getter,
+                self._page_size,
+                start_from = key,
+                upper_bound = key,
+            )
